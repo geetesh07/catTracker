@@ -11,17 +11,9 @@ A modern web application for tracking your progress and competing with others.
 ## Live Demo
 Visit the live site: https://geetesh07.github.io/catTracker/
 
-## Project info
-
-**URL**: https://lovable.dev/projects/d2614986-7477-48c4-a47d-f60d117f83ef
-
 ## How can I edit this code?
 
 There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d2614986-7477-48c4-a47d-f60d117f83ef) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
@@ -71,10 +63,3 @@ This project is built with .
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/d2614986-7477-48c4-a47d-f60d117f83ef) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
