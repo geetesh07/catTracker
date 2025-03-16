@@ -1,4 +1,15 @@
-# Welcome to your Lovable project
+# Cat Tracker
+
+A modern web application for tracking your progress and competing with others.
+
+## Features
+- Weekly leaderboard
+- Progress tracking
+- Notification system
+- User profiles
+
+## Live Demo
+Visit the live site: https://geetesh07.github.io/catTracker/
 
 ## Project info
 
