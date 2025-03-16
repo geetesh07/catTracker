@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Check if dark mode is enabled
@@ -22,17 +23,10 @@ export default function Navbar() {
       document.documentElement.classList.remove('dark');
     }
     
-    // Get current user
-    const getCurrentUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data?.user);
-    };
-    
-    getCurrentUser();
-    
-    // Subscribe to auth changes
+    checkUser();
+    // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
+      setIsLoggedIn(!!session);
     });
     
     return () => {
@@ -52,17 +46,39 @@ export default function Navbar() {
     }
   };
   
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setIsLoggedIn(!!session);
+  };
+  
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    navigate('/');
   };
   
   const closeMenu = () => setIsOpen(false);
   
-  const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-    { href: "/profile", label: "Profile" }
+  const links = [
+    {
+      href: "/",
+      label: "Home",
+      public: true,
+    },
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      public: false,
+    },
+    {
+      href: "/calendar",
+      label: "Calendar",
+      public: false,
+    },
+    {
+      href: "/leaderboard",
+      label: "Leaderboard",
+      public: false,
+    }
   ];
   
   return (
@@ -77,21 +93,22 @@ export default function Navbar() {
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center justify-center flex-1 space-x-4">
           <div className="flex space-x-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={cn(
-                  "transition-all duration-200 px-3 py-2 rounded-md text-sm font-medium flex items-center",
-                  location.pathname === link.href
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={closeMenu}
-              >
-                {link.icon && <link.icon className="h-4 w-4 mr-1" />}
-                {link.label}
-              </Link>
+            {links.map((link) => (
+              (link.public || isLoggedIn) && (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={cn(
+                    "transition-all duration-200 px-3 py-2 rounded-md text-sm font-medium flex items-center",
+                    location.pathname === link.href
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={closeMenu}
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
           </div>
         </div>
@@ -106,27 +123,15 @@ export default function Navbar() {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
           
-          {user ? (
-            <>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                asChild
-                className="rounded-full"
-              >
-                <Link to="/profile">
-                  <User size={18} />
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="rounded-full"
-              >
-                <LogOut size={18} />
-              </Button>
-            </>
+          {isLoggedIn ? (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleLogout}
+              className="rounded-full"
+            >
+              <LogOut size={18} />
+            </Button>
           ) : (
             <Button 
               variant="default" 
@@ -165,24 +170,25 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden animate-fade-in">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-b border-border">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={cn(
-                  "block px-3 py-2 rounded-md text-base font-medium flex items-center",
-                  location.pathname === link.href
-                    ? "text-foreground"
-                    : "text-muted-foreground"
-                )}
-                onClick={closeMenu}
-              >
-                {link.icon && <link.icon className="h-4 w-4 mr-1" />}
-                {link.label}
-              </Link>
+            {links.map((link) => (
+              (link.public || isLoggedIn) && (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={cn(
+                    "block px-3 py-2 rounded-md text-base font-medium flex items-center",
+                    location.pathname === link.href
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                  onClick={closeMenu}
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
             
-            {user ? (
+            {isLoggedIn ? (
               <Button
                 variant="ghost"
                 onClick={handleLogout}

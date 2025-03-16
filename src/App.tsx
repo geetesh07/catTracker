@@ -10,6 +10,9 @@ import Dashboard from "@/pages/Dashboard";
 import Profile from "@/pages/Profile";
 import NotFound from "./pages/NotFound";
 import Leaderboard from "@/pages/Leaderboard";
+import StudyLogs from "@/pages/StudyLogs";
+import Calendar from "@/pages/Calendar";
+import PrivateRoute from "@/components/auth/PrivateRoute";
 
 const queryClient = new QueryClient();
 
@@ -23,9 +26,31 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          } />
+          <Route path="/leaderboard" element={
+            <PrivateRoute>
+              <Leaderboard />
+            </PrivateRoute>
+          } />
+          <Route path="/study-logs" element={
+            <PrivateRoute>
+              <StudyLogs />
+            </PrivateRoute>
+          } />
+          <Route path="/calendar" element={
+            <PrivateRoute>
+              <Calendar />
+            </PrivateRoute>
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

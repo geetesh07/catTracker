@@ -33,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ExamCountdown from "@/components/dashboard/ExamCountdown";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -302,6 +303,8 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
+          
+          <ExamCountdown />
           
           {showAddForm && (
             <Card className="animate-slide-up">

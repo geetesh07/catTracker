@@ -1,16 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "./database.types";
 
-export { supabase };
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 export type User = {
   id: string;
   email: string;
   full_name: string;
-  avatar_url?: string;
-  notification_frequency?: 'daily' | 'weekly' | 'monthly';
-  notification_time?: string;
-  created_at: string;
 };
 
 export type Problem = {
@@ -94,10 +93,10 @@ export async function getBothUsersProgress() {
   
   const result = await Promise.all(
     profiles.map(async (profile) => {
-      const total = await getTotalCompletedProblems(profile.id);
+      const total = await getCompletedProblems(profile.id);
       return {
         ...profile,
-        completed: total,
+        completed: total.length,
         notification_frequency: profile.notification_frequency as 'daily' | 'weekly' | 'monthly'
       };
     })
@@ -130,9 +129,8 @@ export async function updateNotificationPreferences(
 }
 
 export async function deleteAllProblems(userId: string) {
-  console.log(`Attempting to delete all problems for user ${userId}`);
+  console.log('Attempting to delete all problems for user', userId);
 
-  // Delete all problems
   const { data: deletedData, error: deleteError } = await supabase
     .from('problems')
     .delete()
@@ -144,14 +142,13 @@ export async function deleteAllProblems(userId: string) {
     throw deleteError;
   }
 
-  console.log(`Successfully deleted ${deletedData?.length || 0} problems:`, deletedData);
+  console.log('Successfully deleted', deletedData?.length || 0, 'problems');
   return deletedData;
 }
 
 export async function deleteRecentProblems(userId: string, count: number) {
-  console.log(`Attempting to delete ${count} recent problems for user ${userId}`);
+  console.log('Attempting to delete', count, 'recent problems for user', userId);
   
-  // Get the most recent problems to delete
   const { data: problemsToDelete, error: fetchError } = await supabase
     .from('problems')
     .select('*')
@@ -169,9 +166,6 @@ export async function deleteRecentProblems(userId: string, count: number) {
     return [];
   }
 
-  console.log(`Found ${problemsToDelete.length} problems to delete:`, problemsToDelete);
-
-  // Delete the selected problems
   const { data: deletedData, error: deleteError } = await supabase
     .from('problems')
     .delete()
@@ -183,48 +177,8 @@ export async function deleteRecentProblems(userId: string, count: number) {
     throw deleteError;
   }
 
-  console.log(`Successfully deleted ${deletedData?.length || 0} problems:`, deletedData);
+  console.log('Successfully deleted', deletedData?.length || 0, 'problems');
   return deletedData;
-}
-
-export async function getTotalCompletedProblems(userId: string) {
-  console.log('Fetching total completed problems for user:', userId);
-  
-  const { data, error } = await supabase
-    .from('problem_logs')
-    .select('problems_completed')
-    .eq('user_id', userId);
-    
-  if (error) {
-    console.error('Error fetching problem logs:', error);
-    throw error;
-  }
-  
-  // Calculate total problems completed
-  const totalProblems = data?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
-  console.log('Total problems completed:', totalProblems);
-  return totalProblems;
-}
-
-export async function getProblemLogs(userId: string) {
-  console.log('Fetching problem logs for user:', userId);
-  
-  const { data, error } = await supabase
-    .from('problem_logs')
-    .select(`
-      *,
-      topic:topics(name)
-    `)
-    .eq('user_id', userId)
-    .order('date', { ascending: false });
-    
-  if (error) {
-    console.error('Error fetching problem logs:', error);
-    throw error;
-  }
-  
-  console.log('Fetched problem logs:', data);
-  return data || [];
 }
 
 export async function addProblemLog(userId: string, numProblems: number, topicName: string = 'General') {
@@ -287,7 +241,7 @@ export async function addProblemLog(userId: string, numProblems: number, topicNa
 }
 
 export async function deleteAllProblemLogs(userId: string) {
-  console.log(`Attempting to delete all problem logs for user ${userId}`);
+  console.log('Attempting to delete all problem logs for user', userId);
 
   // First, get the count of logs to be deleted
   const { count, error: countError } = await supabase
@@ -300,7 +254,7 @@ export async function deleteAllProblemLogs(userId: string) {
     throw countError;
   }
 
-  console.log(`Found ${count} problem logs to delete`);
+  console.log('Found', count, 'problem logs to delete');
 
   if (!count) {
     console.log('No problem logs to delete');
@@ -319,12 +273,12 @@ export async function deleteAllProblemLogs(userId: string) {
     throw deleteError;
   }
 
-  console.log(`Successfully deleted ${deletedData?.length || 0} problem logs:`, deletedData);
+  console.log('Successfully deleted', deletedData?.length || 0, 'problem logs');
   return deletedData;
 }
 
 export async function deleteRecentProblemLogs(userId: string, count: number) {
-  console.log(`Attempting to delete ${count} recent problem logs for user ${userId}`);
+  console.log('Attempting to delete', count, 'recent problem logs for user', userId);
   
   // Get the most recent logs to delete
   const { data: logsToDelete, error: fetchError } = await supabase
@@ -345,7 +299,7 @@ export async function deleteRecentProblemLogs(userId: string, count: number) {
     return [];
   }
 
-  console.log(`Found ${logsToDelete.length} logs to delete:`, logsToDelete);
+  console.log('Found', logsToDelete.length, 'logs to delete');
 
   // Delete the selected logs
   const { data: deletedData, error: deleteError } = await supabase
@@ -359,6 +313,46 @@ export async function deleteRecentProblemLogs(userId: string, count: number) {
     throw deleteError;
   }
 
-  console.log(`Successfully deleted ${deletedData?.length || 0} problem logs:`, deletedData);
+  console.log('Successfully deleted', deletedData?.length || 0, 'problem logs');
   return deletedData;
+}
+
+export async function getProblemLogs(userId: string) {
+  console.log('Fetching problem logs for user:', userId);
+  
+  const { data, error } = await supabase
+    .from('problem_logs')
+    .select(`
+      *,
+      topic:topics(name)
+    `)
+    .eq('user_id', userId)
+    .order('date', { ascending: false });
+    
+  if (error) {
+    console.error('Error fetching problem logs:', error);
+    throw error;
+  }
+  
+  console.log('Fetched problem logs:', data);
+  return data || [];
+}
+
+export async function getTotalCompletedProblems(userId: string) {
+  console.log('Fetching total completed problems for user:', userId);
+  
+  const { data, error } = await supabase
+    .from('problem_logs')
+    .select('problems_completed')
+    .eq('user_id', userId);
+    
+  if (error) {
+    console.error('Error fetching problem logs:', error);
+    throw error;
+  }
+  
+  // Calculate total problems completed
+  const totalProblems = data?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
+  console.log('Total problems completed:', totalProblems);
+  return totalProblems;
 }
