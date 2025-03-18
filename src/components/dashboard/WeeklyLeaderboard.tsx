@@ -122,10 +122,6 @@ export default function WeeklyLeaderboard() {
   useEffect(() => {
     const fetchWeeklyStats = async () => {
       try {
-        // Get the date range for current week
-        const startDate = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-        const endDate = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-
         // Get all users
         const { data: users } = await supabase
           .from('profiles')
@@ -134,29 +130,27 @@ export default function WeeklyLeaderboard() {
 
         if (!users) return;
 
-        // Get weekly totals for each user
+        // Get all-time totals for each user
         const stats = await Promise.all(
           users.map(async (user) => {
             const { data: logs } = await supabase
               .from('problem_logs')
               .select('problems_completed')
-              .eq('user_id', user.id)
-              .gte('date', startDate)
-              .lte('date', endDate);
+              .eq('user_id', user.id);
 
-            const weeklyTotal = logs?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
+            const totalProblems = logs?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
 
             return {
               user: {
                 ...user,
                 notification_frequency: user.notification_frequency as 'daily' | 'weekly' | 'monthly'
               },
-              weeklyTotal
+              weeklyTotal: totalProblems // renamed for backward compatibility
             };
           })
         );
 
-        // Sort by weekly total in descending order
+        // Sort by total in descending order
         const sortedStats = stats.sort((a, b) => b.weeklyTotal - a.weeklyTotal);
         setWeeklyStats(sortedStats);
 
@@ -186,7 +180,7 @@ export default function WeeklyLeaderboard() {
           frame();
         }
       } catch (error) {
-        console.error('Error fetching weekly stats:', error);
+        console.error('Error fetching total stats:', error);
       } finally {
         setLoading(false);
       }
@@ -219,7 +213,7 @@ export default function WeeklyLeaderboard() {
   const getMotivationalMessage = (position: number, difference: number) => {
     if (position === 0) {
       return {
-        message: "👑 Champion of the Week! Keep crushing it!",
+        message: "👑 Overall Champion! Keep crushing it!",
         icon: Crown
       };
     } else {
