@@ -122,36 +122,51 @@ export default function WeeklyLeaderboard() {
   useEffect(() => {
     const fetchWeeklyStats = async () => {
       try {
+        // Get the date range for current week
+        const startDate = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+        const endDate = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+        console.log('Fetching weekly stats for date range:', { startDate, endDate });
+
         // Get all users
         const { data: users } = await supabase
           .from('profiles')
           .select('*')
           .limit(2);
 
-        if (!users) return;
+        if (!users) {
+          console.log('No users found');
+          return;
+        }
 
-        // Get all-time totals for each user
+        console.log('Found users:', users);
+
+        // Get weekly totals for each user
         const stats = await Promise.all(
           users.map(async (user) => {
             const { data: logs } = await supabase
               .from('problem_logs')
               .select('problems_completed')
-              .eq('user_id', user.id);
+              .eq('user_id', user.id)
+              .gte('date', startDate)
+              .lte('date', endDate);
 
-            const totalProblems = logs?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
+            const weeklyTotal = logs?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
+            console.log(`Weekly total for user ${user.id}:`, weeklyTotal);
 
             return {
               user: {
                 ...user,
                 notification_frequency: user.notification_frequency as 'daily' | 'weekly' | 'monthly'
               },
-              weeklyTotal: totalProblems // renamed for backward compatibility
+              weeklyTotal
             };
           })
         );
 
-        // Sort by total in descending order
+        // Sort by weekly total in descending order
         const sortedStats = stats.sort((a, b) => b.weeklyTotal - a.weeklyTotal);
+        console.log('Sorted weekly stats:', sortedStats);
         setWeeklyStats(sortedStats);
 
         // Trigger confetti if there's a leader
@@ -180,7 +195,7 @@ export default function WeeklyLeaderboard() {
           frame();
         }
       } catch (error) {
-        console.error('Error fetching total stats:', error);
+        console.error('Error fetching weekly stats:', error);
       } finally {
         setLoading(false);
       }
@@ -213,7 +228,7 @@ export default function WeeklyLeaderboard() {
   const getMotivationalMessage = (position: number, difference: number) => {
     if (position === 0) {
       return {
-        message: "👑 Overall Champion! Keep crushing it!",
+        message: "👑 Champion of the Week! Keep crushing it!",
         icon: Crown
       };
     } else {

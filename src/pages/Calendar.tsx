@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
+import Navbar from "@/components/layout/Navbar";
 
 interface Task {
   id: string;
@@ -145,178 +146,181 @@ export default function Calendar() {
   };
 
   const days = eachDayOfInterval({
-    start: startOfMonth(currentDate),
-    end: endOfMonth(currentDate)
+    start: startOfWeek(startOfMonth(currentDate)),
+    end: endOfWeek(endOfMonth(currentDate))
   });
 
   return (
-    <div className="container mx-auto py-8">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 mb-6 text-sm">
-        <Link to="/" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-          <Home className="h-4 w-4" />
-          Cat Tracker
-        </Link>
-        <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
-        <span className="font-medium">Calendar</span>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="container mx-auto py-8 flex-1">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 mb-6 text-sm">
+          <Link to="/" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+            <Home className="h-4 w-4" />
+            Cat Tracker
+          </Link>
+          <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">Calendar</span>
+        </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
-          <CardTitle className="text-2xl font-bold">
-            Study Calendar
-          </CardTitle>
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-lg font-semibold">
-              {format(currentDate, "MMMM yyyy")}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Task
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Task</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Task title"
-                    value={newTask.title}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, title: e.target.value })
-                    }
-                  />
-                  <Textarea
-                    placeholder="Task description"
-                    value={newTask.description}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, description: e.target.value })
-                    }
-                  />
-                  <Input
-                    type="date"
-                    value={newTask.due_date}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, due_date: e.target.value })
-                    }
-                  />
-                  <Button onClick={handleAddTask}>Add Task</Button>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+            <CardTitle className="text-2xl font-bold">
+              Study Calendar
+            </CardTitle>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-lg font-semibold">
+                {format(currentDate, "MMMM yyyy")}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Task
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Task</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="Task title"
+                      value={newTask.title}
+                      onChange={(e) =>
+                        setNewTask({ ...newTask, title: e.target.value })
+                      }
+                    />
+                    <Textarea
+                      placeholder="Task description"
+                      value={newTask.description}
+                      onChange={(e) =>
+                        setNewTask({ ...newTask, description: e.target.value })
+                      }
+                    />
+                    <Input
+                      type="date"
+                      value={newTask.due_date}
+                      onChange={(e) =>
+                        setNewTask({ ...newTask, due_date: e.target.value })
+                      }
+                    />
+                    <Button onClick={handleAddTask}>Add Task</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-px bg-muted">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div
+                  key={day}
+                  className="bg-background p-2 text-center text-sm font-semibold"
+                >
+                  {day}
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-px bg-muted">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div
-                key={day}
-                className="bg-background p-2 text-center text-sm font-semibold"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-px bg-muted">
-            {days.map((day, dayIdx) => (
-              <div
-                key={day.toString()}
-                className={`min-h-[120px] bg-background p-2 ${
-                  !isSameMonth(day, currentDate)
-                    ? "text-muted-foreground"
-                    : "text-foreground"
-                }`}
-              >
-                <time dateTime={format(day, "yyyy-MM-dd")}>
-                  {format(day, "d")}
-                </time>
-                <div className="mt-2 space-y-1">
-                  {tasks
-                    .filter((task) =>
-                      isSameDay(new Date(task.due_date), day)
-                    )
-                    .map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center justify-between rounded bg-primary/10 p-1 text-xs cursor-pointer hover:bg-primary/20"
-                        onClick={() => {
-                          setSelectedTask(task);
-                          setIsTaskDetailOpen(true);
-                        }}
-                      >
-                        <span className={`truncate ${isTaskCompleted(task.id) ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleTaskCompletion(task.id);
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-px bg-muted">
+              {days.map((day, dayIdx) => (
+                <div
+                  key={day.toString()}
+                  className={`min-h-[120px] bg-background p-2 ${
+                    !isSameMonth(day, currentDate)
+                      ? "text-muted-foreground"
+                      : "text-foreground"
+                  }`}
+                >
+                  <time dateTime={format(day, "yyyy-MM-dd")}>
+                    {format(day, "d")}
+                  </time>
+                  <div className="mt-2 space-y-1">
+                    {tasks
+                      .filter((task) =>
+                        isSameDay(new Date(task.due_date), day)
+                      )
+                      .map((task) => (
+                        <div
+                          key={task.id}
+                          className="flex items-center justify-between rounded bg-primary/10 p-1 text-xs cursor-pointer hover:bg-primary/20"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setIsTaskDetailOpen(true);
                           }}
                         >
-                          {isTaskCompleted(task.id) ? (
-                            <Check className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </div>
-                    ))}
+                          <span className={`truncate ${isTaskCompleted(task.id) ? 'line-through text-muted-foreground' : ''}`}>
+                            {task.title}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTaskCompletion(task.id);
+                            }}
+                          >
+                            {isTaskCompleted(task.id) ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <X className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Task Detail Dialog */}
+        <Dialog open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Task Details</DialogTitle>
+            </DialogHeader>
+            {selectedTask && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className={`text-lg font-medium ${isTaskCompleted(selectedTask.id) ? 'line-through text-muted-foreground' : ''}`}>
+                    {selectedTask.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Due: {format(new Date(selectedTask.due_date), "MMMM d, yyyy")}
+                  </p>
+                </div>
+                <p className="text-sm">{selectedTask.description}</p>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleTaskCompletion(selectedTask.id)}
+                  >
+                    {isTaskCompleted(selectedTask.id) ? "Mark Incomplete" : "Mark Complete"}
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Task Detail Dialog */}
-      <Dialog open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Task Details</DialogTitle>
-          </DialogHeader>
-          {selectedTask && (
-            <div className="space-y-4">
-              <div>
-                <h3 className={`text-lg font-medium ${isTaskCompleted(selectedTask.id) ? 'line-through text-muted-foreground' : ''}`}>
-                  {selectedTask.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Due: {format(new Date(selectedTask.due_date), "MMMM d, yyyy")}
-                </p>
-              </div>
-              <p className="text-sm">{selectedTask.description}</p>
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => toggleTaskCompletion(selectedTask.id)}
-                >
-                  {isTaskCompleted(selectedTask.id) ? "Mark Incomplete" : "Mark Complete"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 } 

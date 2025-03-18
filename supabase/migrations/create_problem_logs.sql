@@ -51,7 +51,6 @@ create policy "Users can delete their own problem logs"
 -- Insert default topics
 insert into public.topics (name) values
     ('General'),
-    ('Quantitative'),
-    ('Verbal'),
-    ('Reading Comprehension'),
-    ('Data Interpretation'); 
+    ('Quantitative Aptitude'),
+    ('Data Interpretation & Logical Reasoning'),
+    ('Verbal Ability & Reading Comprehension'); 

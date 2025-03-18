@@ -54,6 +54,7 @@ export async function getCurrentUser() {
 
 export async function getCompletedProblems(userId: string) {
   console.log('Fetching problems for user:', userId);
+  
   const { data, error } = await supabase
     .from('problems')
     .select('*')
@@ -63,8 +64,14 @@ export async function getCompletedProblems(userId: string) {
     console.error('Error fetching problems:', error);
     throw error;
   }
+  
+  if (!data) {
+    console.log('No problems found for user:', userId);
+    return [];
+  }
+  
   console.log('Fetched problems:', data);
-  return data || [];
+  return data;
 }
 
 export async function addCompletedProblem(userId: string, description?: string, category?: string) {
@@ -84,24 +91,62 @@ export async function addCompletedProblem(userId: string, description?: string, 
 }
 
 export async function getBothUsersProgress() {
+  console.log('Fetching both users progress...');
+  
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
     .select('*')
     .limit(2);
     
-  if (profilesError) throw profilesError;
+  if (profilesError) {
+    console.error('Error fetching profiles:', profilesError);
+    throw profilesError;
+  }
+  
+  if (!profiles || profiles.length === 0) {
+    console.log('No profiles found');
+    return [];
+  }
+  
+  console.log('Found profiles:', profiles);
   
   const result = await Promise.all(
     profiles.map(async (profile) => {
-      const total = await getCompletedProblems(profile.id);
-      return {
-        ...profile,
-        completed: total.length,
-        notification_frequency: profile.notification_frequency as 'daily' | 'weekly' | 'monthly'
-      };
+      try {
+        const { data: logs, error: logsError } = await supabase
+          .from('problem_logs')
+          .select('problems_completed')
+          .eq('user_id', profile.id);
+          
+        if (logsError) {
+          console.error(`Error fetching problem logs for user ${profile.id}:`, logsError);
+          return {
+            ...profile,
+            completed: 0,
+            notification_frequency: profile.notification_frequency as 'daily' | 'weekly' | 'monthly'
+          };
+        }
+        
+        const totalProblems = logs?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
+        console.log(`Total problems for user ${profile.id}:`, totalProblems);
+        
+        return {
+          ...profile,
+          completed: totalProblems,
+          notification_frequency: profile.notification_frequency as 'daily' | 'weekly' | 'monthly'
+        };
+      } catch (error) {
+        console.error(`Error processing user ${profile.id}:`, error);
+        return {
+          ...profile,
+          completed: 0,
+          notification_frequency: profile.notification_frequency as 'daily' | 'weekly' | 'monthly'
+        };
+      }
     })
   );
   
+  console.log('Final result:', result);
   return result;
 }
 
@@ -182,6 +227,8 @@ export async function deleteRecentProblems(userId: string, count: number) {
 }
 
 export async function addProblemLog(userId: string, numProblems: number, topicName: string = 'General') {
+  console.log('Adding problem log:', { userId, numProblems, topicName });
+  
   const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
   
   // First, get the topic ID
@@ -197,17 +244,27 @@ export async function addProblemLog(userId: string, numProblems: number, topicNa
   }
 
   if (!topic) {
+    console.error('Topic not found:', topicName);
     throw new Error(`Topic "${topicName}" not found`);
   }
 
+  console.log('Found topic:', topic);
+
   // Check if there's already a log for today and this topic
-  const { data: existingLog } = await supabase
+  const { data: existingLog, error: existingLogError } = await supabase
     .from('problem_logs')
     .select('*')
     .eq('user_id', userId)
     .eq('topic_id', topic.id)
     .eq('date', today)
     .single();
+
+  if (existingLogError && existingLogError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+    console.error('Error checking existing log:', existingLogError);
+    throw existingLogError;
+  }
+
+  console.log('Existing log:', existingLog);
 
   if (existingLog) {
     // Update existing log
@@ -219,7 +276,12 @@ export async function addProblemLog(userId: string, numProblems: number, topicNa
       .eq('id', existingLog.id)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating existing log:', error);
+      throw error;
+    }
+
+    console.log('Updated existing log:', data);
     return data;
   } else {
     // Create new log
@@ -235,7 +297,12 @@ export async function addProblemLog(userId: string, numProblems: number, topicNa
       ])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating new log:', error);
+      throw error;
+    }
+
+    console.log('Created new log:', data);
     return data;
   }
 }
@@ -339,9 +406,9 @@ export async function getProblemLogs(userId: string) {
 }
 
 export async function getTotalCompletedProblems(userId: string) {
-  console.log('Fetching total completed problems for user:', userId);
+  console.log('Fetching total problems for user:', userId);
   
-  const { data, error } = await supabase
+  const { data: logs, error } = await supabase
     .from('problem_logs')
     .select('problems_completed')
     .eq('user_id', userId);
@@ -351,8 +418,12 @@ export async function getTotalCompletedProblems(userId: string) {
     throw error;
   }
   
-  // Calculate total problems completed
-  const totalProblems = data?.reduce((sum, log) => sum + log.problems_completed, 0) || 0;
-  console.log('Total problems completed:', totalProblems);
-  return totalProblems;
+  if (!logs) {
+    console.log('No problem logs found for user:', userId);
+    return 0;
+  }
+  
+  const total = logs.reduce((sum, log) => sum + log.problems_completed, 0);
+  console.log('Total problems:', total);
+  return total;
 }
